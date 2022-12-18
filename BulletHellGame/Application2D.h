@@ -1,26 +1,25 @@
 #pragma once
-
 #include "Application.h"
 #include "Renderer2D.h"
+#include "Entity.h"
 
-class Application2D : public aie::Application {
+class Application2D final : public aie::Application
+{
 public:
 
 	Application2D();
-	virtual ~Application2D();
+	~Application2D() override;
 
-	virtual bool startup();
-	virtual void shutdown();
+	bool startup() override;
+	void shutdown() override;
 
-	virtual void update(float deltaTime);
-	virtual void draw();
+	void update(float _deltaTime) override;
+	void draw() override;
 
 protected:
 
-	aie::Renderer2D*	m_2dRenderer;
-	aie::Texture*		m_texture;
-	aie::Texture*		m_shipTexture;
-	aie::Font*			m_font;
+	aie::Renderer2D* m_2dRenderer = nullptr;
+	aie::Font* m_font = nullptr;
 
-	float m_timer;
+	std::vector<Entity*> m_entities;
 };

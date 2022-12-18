@@ -33,9 +33,9 @@ void Application2D::shutdown() {
 	delete m_2dRenderer;
 }
 
-void Application2D::update(float deltaTime) {
+void Application2D::update(float _deltaTime) {
 
-	m_timer += deltaTime;
+	m_timer += _deltaTime;
 
 	// input example
 	aie::Input* input = aie::Input::getInstance();
@@ -46,16 +46,16 @@ void Application2D::update(float deltaTime) {
 	m_2dRenderer->getCameraPos(camPosX, camPosY);
 
 	if (input->isKeyDown(aie::INPUT_KEY_UP))
-		camPosY += 500.0f * deltaTime;
+		camPosY += 500.0f * _deltaTime;
 
 	if (input->isKeyDown(aie::INPUT_KEY_DOWN))
-		camPosY -= 500.0f * deltaTime;
+		camPosY -= 500.0f * _deltaTime;
 
 	if (input->isKeyDown(aie::INPUT_KEY_LEFT))
-		camPosX -= 500.0f * deltaTime;
+		camPosX -= 500.0f * _deltaTime;
 
 	if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
-		camPosX += 500.0f * deltaTime;
+		camPosX += 500.0f * _deltaTime;
 
 	m_2dRenderer->setCameraPos(camPosX, camPosY);
 
