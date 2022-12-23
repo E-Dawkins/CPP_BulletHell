@@ -5,11 +5,6 @@ void Spawner::Start()
 {
     pos = Vector2(application->getWindowWidth() * 0.5f, application->getWindowHeight() * 0.75f);
     size = 15;
-
-    m_spawnerPositions.emplace_back(application->getWindowWidth() * 0.25f, application->getWindowHeight() * 0.25f);
-    m_spawnerPositions.emplace_back(application->getWindowWidth() * 0.75f, application->getWindowHeight() * 0.75f);
-    m_spawnerPositions.emplace_back(application->getWindowWidth() * 0.25f, application->getWindowHeight() * 0.75f);
-    m_spawnerPositions.emplace_back(application->getWindowWidth() * 0.75f, application->getWindowHeight() * 0.25f);
 }
 
 void Spawner::Update(float _deltaTime)
@@ -22,6 +17,7 @@ void Spawner::Update(float _deltaTime)
         m_moveTimer += _deltaTime;
         m_spawnTimer += _deltaTime;
 
+        // Spawn bullets
         if (m_spawnTimer >= m_maxSpawnTimer)
         {
             SpawnBullets();
@@ -60,16 +56,17 @@ void Spawner::Draw()
         renderer2D->drawCircle(m_endPos.x, m_endPos.y, size * 0.7f, 0);
     }
     
-    renderer2D->setRenderColour(1,1,1,1);
+    renderer2D->setRenderColour(0.3f,0.3f,0.3f,0.7f);
     renderer2D->drawCircle(pos.x, pos.y, size, 0);
 }
 
 void Spawner::LerpPos(float _deltaTime)
 {
-    if (m_t == 0) // Start lerping variables
+    // Start lerp variables
+    if (m_t == 0) 
     {
         m_startPos = pos;
-        m_endPos = m_spawnerPositions[rand() % m_spawnerPositions.size()];
+        m_endPos = m_startPos;
     
         m_lerping = true;
     }
@@ -79,7 +76,7 @@ void Spawner::LerpPos(float _deltaTime)
 
     m_t += _deltaTime;
         
-    if (pos == m_endPos)
+    if (pos == m_endPos) // end of lerp
     {
         m_lerping = false;
         m_t = 0;
@@ -90,7 +87,7 @@ void Spawner::SpawnBullets()
 {
     const int bulletAmount = (rand() % (m_maxBulletAmount - 1 - m_minBulletAmount)) + m_minBulletAmount;
 
-    for (int i = 0; i < bulletAmount; i++)
+    for (int i = 0; i < bulletAmount; i++) // spawns bullets evenly in a circle around spawner
     {
         m_bullets.push_back(new Bullet(renderer2D, *application, m_player));
         m_bullets.back()->pos = pos;

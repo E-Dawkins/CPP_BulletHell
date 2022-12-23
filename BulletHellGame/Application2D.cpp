@@ -1,9 +1,8 @@
 #include "Application2D.h"
-#include "Texture.h"
 #include "Font.h"
 #include "Input.h"
-#include "Player.h"
-#include "Spawner.h"
+#include "Level.h"
+#include "../dependencies/glfw/include/GLFW/glfw3.h"
 
 Application2D::Application2D() = default;
 Application2D::~Application2D() = default;
@@ -14,8 +13,7 @@ bool Application2D::startup()
 	m_2dRenderer = new aie::Renderer2D();
 	m_font = new aie::Font("./font/consolas.ttf", 32);
 
-	m_entities.push_back(new Player(m_2dRenderer, *this));
-	m_entities.push_back(new Spawner(m_2dRenderer, *this, (Player*&)m_entities[0]));
+	m_level = new Level(m_2dRenderer, *this);
 	
 	return true;
 }
@@ -25,9 +23,8 @@ void Application2D::shutdown()
 {
 	delete m_2dRenderer;
 	delete m_font;
-
-	for (const auto entity : m_entities)
-		delete entity;
+	
+	delete m_level;
 }
 
 // Main game loop
@@ -35,11 +32,11 @@ void Application2D::update(const float _deltaTime)
 {
 	aie::Input* input = aie::Input::getInstance();
 
-	for (const auto entity : m_entities)
-	{
-		if (entity->isActive)
-			entity->Update(_deltaTime);
-	}
+	m_level->Update(_deltaTime);
+
+	char fps[32];
+	sprintf_s(fps, 32, "Bullet Hell | FPS: %i", getFPS());
+	glfwSetWindowTitle(getWindowPtr(), fps);
 	
 	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
 		quit();
@@ -52,16 +49,7 @@ void Application2D::draw()
 	
 	m_2dRenderer->begin();
 
-	for (const auto entity : m_entities)
-	{
-		if (entity->isActive)
-			entity->Draw();
-	}
-	
-	// Draws fps top left
-	char fps[32];
-	sprintf_s(fps, 32, "FPS: %i", getFPS());
-	m_2dRenderer->drawText(m_font, fps, 0, 720 - 32);
+	m_level->Draw();
 	
 	m_2dRenderer->end();
 }

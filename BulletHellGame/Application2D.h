@@ -1,7 +1,7 @@
 #pragma once
 #include "Application.h"
 #include "Renderer2D.h"
-#include "Entity.h"
+#include "Level.h"
 
 class Application2D final : public aie::Application
 {
@@ -21,5 +21,5 @@ protected:
 	aie::Renderer2D* m_2dRenderer = nullptr;
 	aie::Font* m_font = nullptr;
 
-	std::vector<Entity*> m_entities;
+	Level* m_level = nullptr;
 };

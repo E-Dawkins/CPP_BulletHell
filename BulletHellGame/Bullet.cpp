@@ -1,5 +1,7 @@
 ﻿#include "Bullet.h"
 
+#include <iostream>
+
 void Bullet::Start()
 {
     size = 3;
@@ -15,7 +17,7 @@ void Bullet::Update(float _deltaTime)
     }
 
     // Bullet collided with player
-    if (Vector2::Distance(pos, m_player->pos) < size + m_player->size * 2)
+    if (Vector2::Distance(pos, m_player->pos) < size + m_player->size)
     {
         m_player->lives--;
         isActive = false;
@@ -24,6 +26,6 @@ void Bullet::Update(float _deltaTime)
 
 void Bullet::Draw()
 {
-    renderer2D->setRenderColour(0,1,0,1);
+    renderer2D->setRenderColour(1,0,0,1);
     renderer2D->drawCircle(pos.x, pos.y, size, 0);
 }
