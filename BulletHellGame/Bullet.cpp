@@ -5,11 +5,12 @@
 void Bullet::Start()
 {
     size = 3;
+    m_speed = 100;
 }
 
 void Bullet::Update(float _deltaTime)
 {
-    pos += velocity * m_speed;
+    pos += velocity * m_speed * _deltaTime;
 
     if (pos.x <= 0 || pos.x >= application->getWindowWidth() || pos.y <= 0 || pos.y >= application->getWindowHeight())
     {
