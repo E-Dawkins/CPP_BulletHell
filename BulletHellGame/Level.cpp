@@ -47,7 +47,12 @@ void Level::LoadLevel(const int _levelNumber)
         std::string sequence;
         
         while(getline(levelFile, sequence))
+        {
+            if (sequence.front() == '#')
+                continue;
+            
             m_sequences.push_back(sequence);
+        }
 
         levelFile.close();
     }
