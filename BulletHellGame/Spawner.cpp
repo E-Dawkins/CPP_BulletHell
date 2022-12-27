@@ -48,11 +48,11 @@ void Spawner::RunSequence(float _deltaTime)
     if (m_lerping)
         LerpPos(_deltaTime);
 
-    if (m_waiting)
-        Wait(_deltaTime);
+    else if (m_waiting)
+        Wait(_deltaTime, m_maxWaitTime);
 
     // Run current command
-    if (m_curComm < (int)m_sequence.size() && m_commInterval >= m_maxCommInterval && !m_lerping && !m_waiting)
+    else if (m_curComm < (int)m_sequence.size() && m_commInterval >= m_maxCommInterval)
     {
         const int index = m_curComm;
         const char commType = m_sequence[index].front();
@@ -60,53 +60,57 @@ void Spawner::RunSequence(float _deltaTime)
         
         m_commInterval = 0;
         m_curComm++;
-        
+
         // Interval
-        if (commType == 'i')
+        if (commType == 'i') 
         {
-            m_maxCommInterval = (float)atof(m_sequence[index].c_str());
-            m_commInterval = m_maxCommInterval;
-            return;
+            m_commInterval = m_maxCommInterval = (float)atof(m_sequence[index].c_str());
         }
 
         // Move, Position
-        if (commType == 'm' || commType == 'p')
+        if (commType == 'm' || commType == 'p') 
         {
-            const int colonIndex = m_sequence[index].find_first_of(':');
-            const std::string xStr = m_sequence[index].substr(0, colonIndex);
-            const std::string yStr = m_sequence[index].substr(colonIndex + 1, m_sequence[index].length() - colonIndex);
-
-            const Vector2 tempPos = {(float)atof(xStr.c_str()), (float)atof(yStr.c_str())};
-            const Vector2 newPos = {tempPos.x * application->getWindowWidth(), tempPos.y * application->getWindowHeight()};
-
-            if (commType == 'm')
-            {
-                m_endPos = newPos;
-                LerpPos(_deltaTime);
-                m_commInterval = m_maxCommInterval;
-            }
-            else pos = newPos;
-            
-            return;
+            MovePos(_deltaTime, index, commType == 'm');
         }
 
         // Wait
-        if (commType == 'w')
+        if (commType == 'w') 
         {
-            m_maxWaitTime = (float)atof(m_sequence[index].c_str());
-            Wait(_deltaTime);
-            return;
+            Wait(_deltaTime, (float)atof(m_sequence[index].c_str()));
         }
-        
+
         // Circle
-        if (commType == 'c')
+        if (commType == 'c') 
         {
             CircleSpawn(atoi(m_sequence[index].c_str()));
-            return;
         }
     }
 }
 
+/**
+ * \brief Moves the spawner to the position signified in the pattern sequence.
+ */
+void Spawner::MovePos(float _deltaTime, int _index, bool _lerp)
+{
+    const int colonIndex = m_sequence[_index].find_first_of(':');
+    const std::string xStr = m_sequence[_index].substr(0, colonIndex);
+    const std::string yStr = m_sequence[_index].substr(colonIndex + 1, m_sequence[_index].length() - colonIndex);
+
+    const Vector2 tempPos = {(float)atof(xStr.c_str()), (float)atof(yStr.c_str())};
+    const Vector2 newPos = {tempPos.x * application->getWindowWidth(), tempPos.y * application->getWindowHeight()};
+
+    if (_lerp)
+    {
+        m_endPos = newPos;
+        LerpPos(_deltaTime);
+        m_commInterval = m_maxCommInterval;
+    }
+    else pos = newPos;
+}
+
+/**
+ * \brief Lerps the spawner's position to the m_endPos.
+ */
 void Spawner::LerpPos(float _deltaTime)
 {
     // Start lerp variables
@@ -126,8 +130,13 @@ void Spawner::LerpPos(float _deltaTime)
         m_lerping = false;
 }
 
-void Spawner::Wait(float _deltaTime)
+/**
+ * \brief Waits for _maxWaitTime seconds before proceeding.
+ */
+void Spawner::Wait(float _deltaTime, float _maxWaitTime)
 {
+    m_maxWaitTime = _maxWaitTime;
+    
     if (m_waiting == false)
     {
         m_waitTime = 0;
@@ -140,6 +149,9 @@ void Spawner::Wait(float _deltaTime)
         m_waiting = false;
 }
 
+/**
+ * \brief Spawns _bulletAmount of bullets evenly distributed in a circle around the spawner.
+ */
 bool Spawner::CircleSpawn(int _bulletAmount)
 {
     for (int i = 0; i < _bulletAmount; i++) // spawns bullets evenly in a circle around spawner

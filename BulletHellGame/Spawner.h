@@ -28,8 +28,9 @@ private:
     void RunSequence(float _deltaTime);
     
     // Command types
+    void MovePos(float _deltaTime, int _index, bool _lerp);
     void LerpPos(float _deltaTime);
-    void Wait(float _deltaTime);
+    void Wait(float _deltaTime, float _maxWaitTime);
     bool CircleSpawn(int _bulletAmount);
 
     // Command variables
