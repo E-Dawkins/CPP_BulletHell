@@ -20,6 +20,8 @@ public:
 
 	// height includes characters that go below starting height
 	float getStringHeight(const char* str);
+	float getLowestHeight(const char* str);
+	float GetStartOffset(const char* str);
 	void getStringSize(const char* str, float& width, float& height);
 
 	// returns a rectangle that fits the string, with x0y0 being bottom left, x1y1 top right

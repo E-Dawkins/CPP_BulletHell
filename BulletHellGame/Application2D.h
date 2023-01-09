@@ -16,10 +16,15 @@ public:
 	void update(float _deltaTime) override;
 	void draw() override;
 
+	void AddState(std::string _stateName, IState* _newState);
+	void SetState(std::string _stateName);
+	IState*& GetState();
+
 protected:
 
 	aie::Renderer2D* m_2dRenderer = nullptr;
 	aie::Font* m_font = nullptr;
 
-	Level* m_level = nullptr;
+	std::map<std::string, IState*> m_states;
+	std::string m_curState;
 };

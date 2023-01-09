@@ -1,18 +1,21 @@
 ﻿#pragma once
 #include <string>
-#include <vector>
 
 #include "Bullet.h"
 #include "Player.h"
 
-class Spawner final : public Entity
+class Spawner final : public IEntity
 {
 public:
-    Spawner(aie::Renderer2D*& _renderer, aie::Application& _application, Player*& _player) : Entity(_renderer, _application)
+    Spawner(aie::Renderer2D*& _renderer, aie::Application& _application) : IEntity(_renderer, _application)
     {
-        m_player = _player;
-        
         Start();
+    }
+
+    ~Spawner() override
+    {
+        for (const auto bullet : bullets)
+            delete bullet;
     }
     
     void Start() override;
@@ -24,20 +27,30 @@ public:
         m_sequence = _sequence;
     }
 
-private:
-    void RunSequence(float _deltaTime);
+    float health = 2;
     
+    std::vector<Bullet*> bullets;
+
+private:
+    // Helper Functions
+    std::vector<float> GetVars(int _index);
+    void SpawnBullet(Vector2 _pos, Vector2 _velocity);
+    
+    void RunSequence(float _deltaTime);
+
     // Command types
+    void Interval(float _newInterval);
     void MovePos(float _deltaTime, int _index, bool _lerp);
-    void LerpPos(float _deltaTime);
-    void Wait(float _deltaTime, float _maxWaitTime);
-    bool CircleSpawn(int _bulletAmount);
+    void LerpPos(float _deltaTime, Vector2 _newEndPos);
+    void Wait(float _deltaTime, float _maxWaitTime = 1.0f);
+    void CircleSpawn(int _bulletAmount);
+    void DiceSpawn(int _index);
 
     // Command variables
     std::vector<std::string> m_sequence;
     int m_curComm = 0;
-    float m_maxCommInterval = 1.0f;
     float m_commInterval = 1.0f;
+    float m_maxCommInterval = 1.0f;
 
     // Wait variables
     bool m_waiting = false;
@@ -49,7 +62,4 @@ private:
     Vector2 m_endPos = Vector2();
     bool m_lerping = false;
     float m_t = 0;
-
-    Player* m_player;
-    std::vector<Bullet*> m_bullets;
 };

@@ -5,33 +5,42 @@ void Spawner::Start()
 {
     pos = Vector2(application->getWindowWidth() * 0.5f, application->getWindowHeight() * 0.75f);
     size = 15;
+
+    for (int i = 0; i < 100; i++)
+    {
+        bullets.push_back(new Bullet(renderer2D, *application));
+        bullets.back()->isActive = false;
+        bullets.back()->SetColour(1,0,0,1);
+    }
 }
 
-void Spawner::Update(float _deltaTime)
+void Spawner::Update(const float _deltaTime)
 {
     // Update bullets
-    for (const auto bullet : m_bullets)
-        bullet->Update(_deltaTime);
-
-    for (int i = (int)m_bullets.size() - 1; i >= 0; i--)
+    for (const auto bullet : bullets)
     {
-        if (!m_bullets[i]->isActive)
-        {
-            delete m_bullets[i];
-            m_bullets.erase(m_bullets.begin() + i);
-        }
+        if (bullet->isActive)
+            bullet->Update(_deltaTime);
     }
 
     // Run pattern sequence
     RunSequence(_deltaTime);
+
+    // Check health state
+    if (health <= 0)
+        isActive = false;
 }
 
 void Spawner::Draw()
 {
-    for (const auto bullet : m_bullets)
-        bullet->Draw();
+    // Draw bullets
+    for (const auto bullet : bullets)
+    {
+        if (bullet->isActive)
+            bullet->Draw();
+    }
 
-    if (m_lerping)
+    if (m_lerping) // draws lerp end-point
     {
         renderer2D->setRenderColour(1,1,0,0.5);
         renderer2D->drawCircle(m_endPos.x, m_endPos.y, size * 0.7f, 0);
@@ -41,15 +50,20 @@ void Spawner::Draw()
     renderer2D->drawCircle(pos.x, pos.y, size, 0);
 }
 
-void Spawner::RunSequence(float _deltaTime)
+/**
+ * \brief Runs the spawner's command sequence
+ */
+void Spawner::RunSequence(const float _deltaTime)
 {
+    char* endPtr; // used for string-to-type functions
+    
     m_commInterval += _deltaTime;
     
     if (m_lerping)
-        LerpPos(_deltaTime);
+        LerpPos(_deltaTime, m_endPos);
 
     else if (m_waiting)
-        Wait(_deltaTime, m_maxWaitTime);
+        Wait(_deltaTime);
 
     // Run current command
     else if (m_curComm < (int)m_sequence.size() && m_commInterval >= m_maxCommInterval)
@@ -64,7 +78,7 @@ void Spawner::RunSequence(float _deltaTime)
         // Interval
         if (commType == 'i') 
         {
-            m_commInterval = m_maxCommInterval = (float)atof(m_sequence[index].c_str());
+            Interval(strtof(m_sequence[index].c_str(), &endPtr));
         }
 
         // Move, Position
@@ -76,54 +90,106 @@ void Spawner::RunSequence(float _deltaTime)
         // Wait
         if (commType == 'w') 
         {
-            Wait(_deltaTime, (float)atof(m_sequence[index].c_str()));
+            Wait(_deltaTime, strtof(m_sequence[index].c_str(), &endPtr));
         }
 
         // Circle
         if (commType == 'c') 
         {
-            CircleSpawn(atoi(m_sequence[index].c_str()));
+            CircleSpawn(strtol(m_sequence[index].c_str(), &endPtr, 10));
+        }
+
+        // Dice
+        if (commType == 'd')
+        {
+            DiceSpawn(index);
         }
     }
 }
 
+#pragma region Helper Functions
+
 /**
- * \brief Moves the spawner to the position signified in the pattern sequence.
+ * \brief Gets a list of floats from the sequence split by ':', i.e. 3:4:5 => {3,4,5}
  */
-void Spawner::MovePos(float _deltaTime, int _index, bool _lerp)
+std::vector<float> Spawner::GetVars(const int _index)
 {
-    const int colonIndex = m_sequence[_index].find_first_of(':');
-    const std::string xStr = m_sequence[_index].substr(0, colonIndex);
-    const std::string yStr = m_sequence[_index].substr(colonIndex + 1, m_sequence[_index].length() - colonIndex);
+    std::vector<float> subStrings;
+    std::string curSubStr;
 
-    const Vector2 tempPos = {(float)atof(xStr.c_str()), (float)atof(yStr.c_str())};
-    const Vector2 newPos = {tempPos.x * application->getWindowWidth(), tempPos.y * application->getWindowHeight()};
-
-    if (_lerp)
+    for (std::string::iterator iter = m_sequence[_index].begin(); iter != m_sequence[_index].end(); ++iter)
     {
-        m_endPos = newPos;
-        LerpPos(_deltaTime);
-        m_commInterval = m_maxCommInterval;
+        if (*iter != ':')
+            curSubStr += *iter;
+
+        if (*iter == ':' || iter == m_sequence[_index].end() - 1)
+        {
+            if (!curSubStr.empty())
+            {
+                char* endPtr;
+                subStrings.push_back(strtof(curSubStr.c_str(), &endPtr));
+            }
+                
+            curSubStr = "";
+        }
     }
+
+    return subStrings;
+}
+
+/**
+ * \brief Sets a bullet from the pool to active, and sets its position/velocity
+ */
+void Spawner::SpawnBullet(const Vector2 _pos, const Vector2 _velocity)
+{
+    bullets.front()->pos = _pos;
+    bullets.front()->velocity = _velocity;
+    bullets.front()->isActive = true;
+    
+    bullets.front()->Start();
+    
+    std::rotate(bullets.begin(), bullets.begin() + 1, bullets.end());
+}
+
+#pragma endregion
+
+#pragma region Command Functions
+
+/**
+ * \brief Sets the bullet interval to the _newInterval
+ */
+void Spawner::Interval(const float _newInterval)
+{
+    m_commInterval = m_maxCommInterval = _newInterval;
+}
+
+/**
+ * \brief Moves the spawner to the position signified in the pattern sequence
+ */
+void Spawner::MovePos(const float _deltaTime, const int _index, const bool _lerp)
+{
+    const std::vector<float> vars = GetVars(_index);
+    const Vector2 newPos = {vars[0] * application->getWindowWidth(), vars[1] * application->getWindowHeight()};
+
+    if (_lerp) LerpPos(_deltaTime, newPos);
     else pos = newPos;
 }
 
 /**
- * \brief Lerps the spawner's position to the m_endPos.
+ * \brief Interpolates the spawner's position to the _newEndPos
  */
-void Spawner::LerpPos(float _deltaTime)
+void Spawner::LerpPos(const float _deltaTime, const Vector2 _newEndPos)
 {
-    // Start lerp variables
-    if (m_lerping == false) 
+    if (m_lerping == false) // start lerp variables
     {
         m_t = 0;
         m_startPos = pos;
+        m_endPos = _newEndPos;
+        m_commInterval = m_maxCommInterval;
         m_lerping = true;
     }
-
-    // Actual lerp code
+    
     pos = Vector2::Lerp(m_startPos, m_endPos, m_t);
-
     m_t += _deltaTime;
         
     if (pos == m_endPos) // end of lerp
@@ -131,37 +197,78 @@ void Spawner::LerpPos(float _deltaTime)
 }
 
 /**
- * \brief Waits for _maxWaitTime seconds before proceeding.
+ * \brief Waits for _maxWaitTime seconds before proceeding
  */
-void Spawner::Wait(float _deltaTime, float _maxWaitTime)
+void Spawner::Wait(const float _deltaTime, const float _maxWaitTime)
 {
-    m_maxWaitTime = _maxWaitTime;
-    
-    if (m_waiting == false)
+    if (m_waiting == false) // start waiting variables
     {
         m_waitTime = 0;
+        m_maxWaitTime = _maxWaitTime;
         m_waiting = true;
     }
     
     m_waitTime += _deltaTime;
 
-    if (m_waitTime >= m_maxWaitTime)
+    if (m_waitTime >= m_maxWaitTime) // end of wait time
         m_waiting = false;
 }
 
 /**
- * \brief Spawns _bulletAmount of bullets evenly distributed in a circle around the spawner.
+ * \brief Spawns _bulletAmount of bullets evenly distributed in a circle around the spawner
  */
-bool Spawner::CircleSpawn(int _bulletAmount)
+void Spawner::CircleSpawn(const int _bulletAmount)
 {
     for (int i = 0; i < _bulletAmount; i++) // spawns bullets evenly in a circle around spawner
     {
-        m_bullets.push_back(new Bullet(renderer2D, *application, m_player));
-        m_bullets.back()->pos = pos;
-
         const float rads = glm::radians((360.0f / _bulletAmount) * i);
-        m_bullets.back()->velocity = Vector2(cos(rads), sin(rads));
+        Vector2 velocity = Vector2(cos(rads), sin(rads)).Normalize();
+        SpawnBullet(pos + velocity * 20.0f, velocity);
+    }
+}
+
+/**
+ * \brief Spawns a dice face of bullets at a corner of the spawner, i.e. top-left
+ */
+void Spawner::DiceSpawn(const int _index)
+{
+    const std::vector<float> diceVars = GetVars(_index);
+    
+    const float rads = glm::radians(45.0f * diceVars[1]); // spawn pos at increments of 45 degrees
+    const Vector2 diceCenter = pos + (Vector2(cos(rads), sin(rads)) * 35.0f);
+
+    const int diceVal = (int)diceVars[0] % 7 + ((int)diceVars[0] % 7 == 0 ? 1 : 0);
+
+    std::vector<Vector2> diceFacePositions;
+    constexpr float diceSpacing = 10.0f;
+
+    if (diceVal % 2 != 0) // odd nums, i.e. 1,3,5
+    {
+        diceFacePositions.push_back(diceCenter);
     }
 
-    return true;
+    if (diceVal > 1) // all but 1, i.e. 2,3,4,5,6
+    {
+        diceFacePositions.push_back(diceCenter - Vector2(diceSpacing, diceSpacing));
+        diceFacePositions.push_back(diceCenter + Vector2(diceSpacing, diceSpacing));
+    }
+
+    if (diceVal > 3) // above 3, i.e. 4,5,6
+    {
+        diceFacePositions.push_back(diceCenter - Vector2(diceSpacing, -diceSpacing));
+        diceFacePositions.push_back(diceCenter + Vector2(diceSpacing, -diceSpacing));
+    }
+
+    if (diceVal == 6) // only 6
+    {
+        diceFacePositions.push_back(diceCenter - Vector2(diceSpacing, 0));
+        diceFacePositions.push_back(diceCenter + Vector2(diceSpacing, 0));
+    }
+
+    for(const auto position : diceFacePositions) // spawn dice-face of bullets
+    {
+        SpawnBullet(position, (diceCenter - pos).Normalize());
+    }
 }
+
+#pragma endregion

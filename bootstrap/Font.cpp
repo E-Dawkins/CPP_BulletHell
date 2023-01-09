@@ -116,6 +116,43 @@ float Font::getStringHeight(const char* str) {
 	return high - low;
 }
 
+float Font::getLowestHeight(const char* str)
+{
+	stbtt_aligned_quad Q = {};
+	float high = -9999999;
+	float xPos = 0.0f;
+	float yPos = 0.0f;
+
+	while (*str != 0) {
+		stbtt_GetBakedQuad(
+			(stbtt_bakedchar*)m_glyphData,
+			m_textureWidth,
+			m_textureHeight,
+			(unsigned char)*str, &xPos, &yPos, &Q, 1);
+		
+		high = high < Q.y1 ? Q.y1 : high;
+
+		str++;
+	}
+
+	return high;
+}
+	
+float Font::GetStartOffset(const char* str)
+{
+	stbtt_aligned_quad Q = {};
+	float xPos = 0.0f;
+	float yPos = 0.0f;
+
+	stbtt_GetBakedQuad(
+			(stbtt_bakedchar*)m_glyphData,
+			m_textureWidth,
+			m_textureHeight,
+			(unsigned char)*str, &xPos, &yPos, &Q, 1);
+	
+	return Q.x0;
+}
+
 void Font::getStringSize(const char* str, float& width, float& height) {
 
 	stbtt_aligned_quad Q = {};
